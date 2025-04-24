@@ -1,5 +1,5 @@
 import psycopg2
-from flask import Flask, request, jsonify, json, g
+from flask import Flask, API, request, jsonify, json, g
 
 app = Flask(__name__) # flask app config
 
