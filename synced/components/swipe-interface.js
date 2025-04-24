@@ -4,8 +4,8 @@ import React from "react";
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
 import {
   ThumbsUp,
   ThumbsDown,
@@ -14,7 +14,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useSongRecommendations } from "@/hooks/use-song-recommendations";
+import { useSongRecommendations } from "../hooks/use-song-recommendations";
 
 export function SwipeInterface() {
   const { currentSong, isLoading, swipeLeft, swipeRight } =
@@ -23,8 +23,8 @@ export function SwipeInterface() {
   const [dragOffset, setDragOffset] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const cardRef = useRef < HTMLDivElement > null;
-  const audioRef = (useRef < HTMLAudioElement) | (null > null);
+  const cardRef = useRef(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     if (currentSong?.previewUrl) {

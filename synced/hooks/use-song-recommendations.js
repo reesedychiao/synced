@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { mockSongs } from "@/lib/mock-data";
-import { Song } from "@/types/song";
+import { mockSongs } from "../lib/mock-data";
 
 export function useSongRecommendations() {
-  const [currentSong, setCurrentSong] = (useState < Song) | (null > null);
+  const [currentSong, setCurrentSong] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [seenSongs, setSeenSongs] = useState < Set < string >> new Set();
+  const [seenSongs, setSeenSongs] = useState(new Set());
 
   const fetchNextRecommendation = useCallback(async () => {
     setIsLoading(true);

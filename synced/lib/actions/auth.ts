@@ -3,7 +3,7 @@
 import { signIn, signOut } from "next-auth/react";
 
 export const login = async () => {
-  await signIn("github", { redirectTo: "/" });
+  await signIn("github", { redirectTo: "/swipe" });
 };
 
 export const logout = async () => {
