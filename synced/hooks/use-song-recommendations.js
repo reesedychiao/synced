@@ -1,7 +1,30 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { mockSongs } from "../lib/mock-data";
+
+async function fetchSpotifyData(title, artist) {
+  try {
+    const response = await fetch(
+      `/api/spotify/search?title=${encodeURIComponent(
+        title
+      )}&artist=${encodeURIComponent(artist)}`
+    );
+    if (!response.ok) {
+      throw new Error("Spotify search failed");
+    }
+    const data = await response.json();
+    return {
+      albumCover: data.albumCover,
+      previewUrl: data.previewUrl,
+    };
+  } catch (error) {
+    console.error("Error fetching Spotify data:", error);
+    return {
+      albumCover: null,
+      previewUrl: null,
+    };
+  }
+}
 
 export function useSongRecommendations() {
   const [currentSong, setCurrentSong] = useState(null);
@@ -12,27 +35,31 @@ export function useSongRecommendations() {
     setIsLoading(true);
 
     try {
-      // This would be replaced with your actual API call to the Flask backend
-      // const response = await fetch('/api/recommendations/next');
-      // const data = await response.json();
-
-      // For now, we'll use mock data
-      const unseenSongs = mockSongs.filter((song) => !seenSongs.has(song.id));
-
-      if (unseenSongs.length === 0) {
-        // If we've seen all songs, reset
-        setSeenSongs(new Set());
-        setCurrentSong(mockSongs[0]);
-      } else {
-        const randomIndex = Math.floor(Math.random() * unseenSongs.length);
-        setCurrentSong(unseenSongs[randomIndex]);
+      const response = await fetch("http://localhost:5000/recommendation/next");
+      if (!response.ok) {
+        throw new Error("Failed to fetch next recommendation");
       }
+      const data = await response.json();
+      if (!data) {
+        console.error("No song data received");
+        return;
+      }
+      const { albumCover, previewUrl } = await fetchSpotifyData(
+        data.title,
+        data.artist
+      );
+      const enhancedSong = {
+        ...data,
+        albumCover,
+        previewUrl,
+      };
+      setCurrentSong(enhancedSong);
     } catch (error) {
       console.error("Failed to fetch recommendation:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [seenSongs]);
+  }, []);
 
   useEffect(() => {
     fetchNextRecommendation();
@@ -42,19 +69,19 @@ export function useSongRecommendations() {
     if (!currentSong) return;
 
     try {
-      // This would be replaced with your actual API call
-      await fetch("/api/recommendations/feedback", {
+      await fetch("http://localhost:5000/recommendation/feedback", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          songId: currentSong.id,
+          song_id: currentSong.id,
+          title: currentSong.title,
+          artist: currentSong.artist,
           liked: false,
         }),
       });
 
-      setSeenSongs((prev) => new Set([...prev, currentSong.id]));
       fetchNextRecommendation();
     } catch (error) {
       console.error("Failed to send feedback:", error);
@@ -65,19 +92,19 @@ export function useSongRecommendations() {
     if (!currentSong) return;
 
     try {
-      // This would be replaced with your actual API call
-      await fetch("/api/recommendations/feedback", {
+      await fetch("http://localhost:5000/recommendation/feedback", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          songId: currentSong.id,
+          song_id: currentSong.id,
+          title: currentSong.title,
+          artist: currentSong.artist,
           liked: true,
         }),
       });
 
-      setSeenSongs((prev) => new Set([...prev, currentSong.id]));
       fetchNextRecommendation();
     } catch (error) {
       console.error("Failed to send feedback:", error);

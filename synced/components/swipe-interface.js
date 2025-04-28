@@ -27,9 +27,10 @@ export function SwipeInterface() {
   const audioRef = useRef(null);
 
   useEffect(() => {
-    if (currentSong?.previewUrl) {
+    if (currentSong && currentSong.previewUrl) {
       audioRef.current = new Audio(currentSong.previewUrl);
       audioRef.current.volume = isMuted ? 0 : 0.5;
+
       return () => {
         if (audioRef.current) {
           audioRef.current.pause();
