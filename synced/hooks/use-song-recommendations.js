@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 
 async function fetchSpotifyData(title, artist) {
   try {
@@ -9,9 +10,7 @@ async function fetchSpotifyData(title, artist) {
         title
       )}&artist=${encodeURIComponent(artist)}`
     );
-    if (!response.ok) {
-      throw new Error("Spotify search failed");
-    }
+    if (!response.ok) throw new Error("Spotify search failed");
     const data = await response.json();
     return {
       albumCover: data.albumCover,
@@ -19,97 +18,103 @@ async function fetchSpotifyData(title, artist) {
     };
   } catch (error) {
     console.error("Error fetching Spotify data:", error);
-    return {
-      albumCover: null,
-      previewUrl: null,
-    };
+    return { albumCover: null, previewUrl: null };
   }
 }
 
 export function useSongRecommendations() {
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+
+  const [recommendations, setRecommendations] = useState([]);
+  const [currentSongIndex, setCurrentSongIndex] = useState(0);
   const [currentSong, setCurrentSong] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [seenSongs, setSeenSongs] = useState(new Set());
 
-  const fetchNextRecommendation = useCallback(async () => {
+  const enhanceSong = async (song) => {
+    const { albumCover, previewUrl } = await fetchSpotifyData(
+      song.title,
+      song.artist
+    );
+    return {
+      ...song,
+      albumCover,
+      previewUrl,
+    };
+  };
+
+  const fetchRecommendations = useCallback(async () => {
+    if (!userId) return;
+
     setIsLoading(true);
-
     try {
-      const response = await fetch("http://localhost:5000/recommendation/next");
-      if (!response.ok) {
-        throw new Error("Failed to fetch next recommendation");
-      }
-      const data = await response.json();
-      if (!data) {
-        console.error("No song data received");
-        return;
-      }
-      const { albumCover, previewUrl } = await fetchSpotifyData(
-        data.title,
-        data.artist
+      const res = await fetch(
+        `http://localhost:5000/users/${userId}/recommendations`
       );
-      const enhancedSong = {
-        ...data,
-        albumCover,
-        previewUrl,
-      };
-      setCurrentSong(enhancedSong);
-    } catch (error) {
-      console.error("Failed to fetch recommendation:", error);
+      const songs = await res.json();
+      const enhanced = await Promise.all(
+        songs.map((song) => enhanceSong(song))
+      );
+      setRecommendations(enhanced);
+      setCurrentSongIndex(0);
+      setCurrentSong(enhanced[0] || null);
+    } catch (err) {
+      console.error("Error fetching recommendations:", err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
-    fetchNextRecommendation();
-  }, [fetchNextRecommendation]);
+    if (userId) fetchRecommendations();
+  }, [fetchRecommendations, userId]);
 
-  const swipeLeft = useCallback(async () => {
-    if (!currentSong) return;
-
-    try {
-      await fetch("http://localhost:5000/recommendation/feedback", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          song_id: currentSong.id,
-          title: currentSong.title,
-          artist: currentSong.artist,
-          liked: false,
-        }),
-      });
-
-      fetchNextRecommendation();
-    } catch (error) {
-      console.error("Failed to send feedback:", error);
-    }
-  }, [currentSong, fetchNextRecommendation]);
-
-  const swipeRight = useCallback(async () => {
-    if (!currentSong) return;
+  const handleFeedback = async (liked) => {
+    const song = recommendations[currentSongIndex];
+    if (!song) return;
 
     try {
-      await fetch("http://localhost:5000/recommendation/feedback", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          song_id: currentSong.id,
-          title: currentSong.title,
-          artist: currentSong.artist,
-          liked: true,
-        }),
-      });
+      const endpoint = liked
+        ? `http://localhost:5000/users/${userId}/songs`
+        : `http://localhost:5000/users/${userId}/songs/${song.id}/dislike`;
 
-      fetchNextRecommendation();
-    } catch (error) {
-      console.error("Failed to send feedback:", error);
+      await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: liked
+          ? JSON.stringify({
+              name: song.title,
+              artist: song.artist,
+              album_cover: song.albumCover,
+              spotify_id: song.spotify_id,
+              genre: song.genre,
+            })
+          : null,
+      });
+    } catch (err) {
+      console.error("Feedback error:", err);
     }
-  }, [currentSong, fetchNextRecommendation]);
+  };
+
+  const swipeLeft = async () => {
+    await handleFeedback(false);
+    showNextSong();
+  };
+
+  const swipeRight = async () => {
+    await handleFeedback(true);
+    showNextSong();
+  };
+
+  const showNextSong = () => {
+    const nextIndex = currentSongIndex + 1;
+    if (nextIndex < recommendations.length) {
+      setCurrentSongIndex(nextIndex);
+      setCurrentSong(recommendations[nextIndex]);
+    } else {
+      fetchRecommendations(); // Fetch new batch
+    }
+  };
 
   return {
     currentSong,
