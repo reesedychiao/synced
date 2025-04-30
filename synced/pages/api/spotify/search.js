@@ -1,49 +1,49 @@
-import querystring from "querystring";
+import { getToken } from "next-auth/jwt";
 
 export default async function handler(req, res) {
-  const { title, artist } = req.query;
+  const { title, artist, year } = req.query;
 
-  const client_id = process.env.SPOTIFY_CLIENT_ID;
-  const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+  const query = `track:${title} artist:${artist} year:${year}`;
 
-  const tokenResponse = await fetch("https://accounts.spotify.com/api/token", {
+  const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
       Authorization:
         "Basic " +
-        Buffer.from(client_id + ":" + client_secret).toString("base64"),
+        Buffer.from(
+          process.env.SPOTIFY_CLIENT_ID +
+            ":" +
+            process.env.SPOTIFY_CLIENT_SECRET
+        ).toString("base64"),
+      "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: querystring.stringify({
-      grant_type: "client_credentials",
-    }),
+    body: "grant_type=client_credentials",
   });
 
-  const tokenData = await tokenResponse.json();
-  const accessToken = tokenData.access_token;
+  const { access_token } = await tokenRes.json();
 
-  const searchQuery = `${title} ${artist}`;
-  const searchResponse = await fetch(
+  const searchRes = await fetch(
     `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-      searchQuery
+      query
     )}&type=track&limit=1`,
     {
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${access_token}`,
       },
     }
   );
 
-  const searchData = await searchResponse.json();
+  const searchData = await searchRes.json();
 
-  if (!searchData.tracks.items.length) {
-    return res.status(404).json({ message: "No song found" });
+  const track = searchData?.tracks?.items?.[0];
+  if (!track) {
+    return res.status(404).json({ error: "Track not found" });
   }
 
-  const song = searchData.tracks.items[0];
-
-  return res.status(200).json({
-    albumCover: song.album.images[0]?.url || null,
-    previewUrl: song.preview_url || null,
+  res.status(200).json({
+    albumCover: track.album.images?.[0]?.url ?? null,
+    previewUrl: track.preview_url ?? null,
+    spotifyId: track.id,
+    externalUrl: track.external_urls.spotify,
   });
 }

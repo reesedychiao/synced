@@ -3,22 +3,31 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
-async function fetchSpotifyData(title, artist) {
+async function fetchSpotifyData(title, artist, year) {
   try {
     const response = await fetch(
       `/api/spotify/search?title=${encodeURIComponent(
         title
-      )}&artist=${encodeURIComponent(artist)}`
+      )}&artist=${encodeURIComponent(artist)}&year=${encodeURIComponent(year)}`
     );
     if (!response.ok) throw new Error("Spotify search failed");
+
     const data = await response.json();
+
     return {
       albumCover: data.albumCover,
       previewUrl: data.previewUrl,
+      spotifyId: data.spotifyId,
+      externalUrl: data.externalUrl,
     };
   } catch (error) {
     console.error("Error fetching Spotify data:", error);
-    return { albumCover: null, previewUrl: null };
+    return {
+      albumCover: null,
+      previewUrl: null,
+      spotifyId: null,
+      externalUrl: null,
+    };
   }
 }
 

@@ -1,13 +1,15 @@
 from flask import Flask
 from flask_cors import CORS
 from .db import init_db
+from .config import Config
 
 def create_app():
-    app = Flask(__name__) # initialize Flask app
-    CORS(app) # allow frontend and backend to communicate
-    init_db(app) # connect to database
+    app = Flask(__name__)
+    app.config.from_object(Config)
+    CORS(app)
+    init_db(app)
 
-    from .routes import main # import the blueprint that contains the endpoints
-    app.register_blueprint(main) # tell Flask to use those endpoints
+    from .routes import main
+    app.register_blueprint(main)
 
     return app

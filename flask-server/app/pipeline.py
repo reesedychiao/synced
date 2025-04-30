@@ -3,12 +3,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 import numpy as np
 import pandas as pd
+import os
 
-data = pd.read_csv("../data/data.csv")
+data = pd.read_csv(os.path.join(os.path.dirname(__file__), "data", "data.csv"))
 
 song_cluster_pipeline = Pipeline([('scaler', StandardScaler()), 
                                   ('kmeans', KMeans(n_clusters=20, 
-                                   verbose=False, n_jobs=4))
+                                   verbose=False))
                                  ], verbose=False)
 
 X = data.select_dtypes(np.number)

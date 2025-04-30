@@ -5,10 +5,15 @@ import os
 from scipy.spatial.distance import cdist
 import pandas as pd
 import numpy as np
-from pipeline import song_cluster_pipeline
+from .pipeline import song_cluster_pipeline
+from dotenv import load_dotenv
 
-sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=os.environ["SPOTIFY_CLIENT_ID"],
-                                                           client_secret=os.environ["SPOTIFY_CLIENT_SECRET"]))
+load_dotenv()
+
+sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+    client_id=os.environ["SPOTIPY_CLIENT_ID"],
+    client_secret=os.environ["SPOTIPY_CLIENT_SECRET"]
+))
 
 number_cols = ['valence', 'year', 'acousticness', 'danceability', 'duration_ms', 'energy', 'explicit',
  'instrumentalness', 'key', 'liveness', 'loudness', 'mode', 'popularity', 'speechiness', 'tempo']

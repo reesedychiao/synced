@@ -3,7 +3,7 @@ import spotipy
 from flask import Flask, request, jsonify, g
 from spotipy.oauth2 import SpotifyClientCredentials
 import os
-from recommender import recommend_songs, get_song_data
+from .recommender import recommend_songs, get_song_data
 import pandas as pd
 
 app = Flask(__name__)
