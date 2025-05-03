@@ -14,7 +14,7 @@ def create_or_verify_user():
     name = data.get("name")
     email = data.get("email")
 
-    print(f"👤 [POST] User login: {user_id}, {name}, {email}")
+    print(f"User login: {user_id}, {name}, {email}")
 
     if not user_id or not email:
         return jsonify({"error": "Missing required fields"}), 400
@@ -27,6 +27,45 @@ def create_or_verify_user():
 
     g.db.commit()
     return jsonify({"message": "User created or verified"}), 200
+
+@main.route("/users/<user_id>/recommendations", methods=["GET"])
+def get_recommendations(user_id):
+    print(f"[GET] Recommendations requested for user_id={user_id}")
+    
+    g.cursor.execute("""
+        SELECT s.song_name, s.artist_name, s.year
+        FROM songs s
+        JOIN user_songs us ON us.song_id = s.id
+        WHERE us.user_id = %s;
+    """, (user_id,))
+    liked_songs = g.cursor.fetchall()
+
+    print(f"Found {len(liked_songs)} liked songs.")
+
+    DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "data.csv")
+
+    try:
+        spotify_data = pd.read_csv(DATA_PATH)
+    except Exception as e:
+        print(f"Failed to load data.csv: {e}")
+        return jsonify({'error': 'Data load failed'}), 500
+
+    if not liked_songs:
+        print("No liked songs yet — returning random starter songs.")
+        starter = spotify_data.sample(10)
+        return jsonify(starter[['name', 'year', 'artists']].to_dict(orient="records")), 200
+
+    song_list = [{'name': row[0], 'artists': row[1]} for row in liked_songs]
+
+    try:
+        recs = recommend_songs(song_list, spotify_data, n_songs=10)
+        print(f"Generated {len(recs)} recommendations.")
+    except Exception as e:
+        print(f"Recommendation error: {e}")
+        return jsonify({'error': 'Recommendation failed'}), 500
+
+    return jsonify(recs), 200
+
 
 # @main.route("/get_song", methods=["GET"])
 # def get_song():

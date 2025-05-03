@@ -108,42 +108,6 @@ def dislike_song(user_id, song_id):
     print(f"👎 Song disliked and recorded.")
     return jsonify({'message': 'Song disliked successfully!'}), 201
 
-
-@app.route("/users/<int:user_id>/recommendations", methods=["GET"])
-def get_recommendations(user_id):
-    print(f"📥 [GET] Recommendations requested for user_id={user_id}")
-    
-    g.cursor.execute("""
-        SELECT s.song_name, s.artist_name, s.spotify_id
-        FROM songs s
-        JOIN user_songs us ON us.song_id = s.id
-        WHERE us.user_id = %s;
-    """, (user_id,))
-    liked_songs = g.cursor.fetchall()
-    
-    if not liked_songs:
-        print("⚠️ No liked songs found for this user.")
-        return jsonify({'error': 'No liked songs found'}), 404
-
-    print(f"✅ Found {len(liked_songs)} liked songs.")
-    
-    song_list = [{'name': row[0], 'artists': row[1]} for row in liked_songs]
-
-    try:
-        spotify_data = pd.read_csv("data/data.csv")
-    except Exception as e:
-        print(f"❌ Failed to load data.csv: {e}")
-        return jsonify({'error': 'Data load failed'}), 500
-
-    try:
-        recs = recommend_songs(song_list, spotify_data, n_songs=10)
-        print(f"🎧 Generated {len(recs)} recommendations.")
-    except Exception as e:
-        print(f"❌ Recommendation error: {e}")
-        return jsonify({'error': 'Recommendation failed'}), 500
-
-    return jsonify(recs), 200
-
 # @app.route('/users/<int:user_id>/liked-songs', methods=['GET'])
 # def get_liked_songs(user_id):
 #     g.cursor.execute("""

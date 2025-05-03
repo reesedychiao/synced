@@ -3,30 +3,34 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
-async function fetchSpotifyData(title, artist, year) {
+async function fetchSpotifyData(title, year) {
   try {
     const response = await fetch(
       `/api/spotify/search?title=${encodeURIComponent(
         title
-      )}&artist=${encodeURIComponent(artist)}&year=${encodeURIComponent(year)}`
+      )}&year=${encodeURIComponent(year)}`
     );
-    if (!response.ok) throw new Error("Spotify search failed");
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Spotify API failed:", errorText);
+      throw new Error("Spotify search failed");
+    }
 
     const data = await response.json();
 
     return {
       albumCover: data.albumCover,
       previewUrl: data.previewUrl,
-      spotifyId: data.spotifyId,
       externalUrl: data.externalUrl,
+      artists: data.artists,
     };
   } catch (error) {
     console.error("Error fetching Spotify data:", error);
     return {
       albumCover: null,
       previewUrl: null,
-      spotifyId: null,
       externalUrl: null,
+      artists: null,
     };
   }
 }
@@ -41,14 +45,14 @@ export function useSongRecommendations() {
   const [isLoading, setIsLoading] = useState(true);
 
   const enhanceSong = async (song) => {
-    const { albumCover, previewUrl } = await fetchSpotifyData(
-      song.title,
-      song.artist
-    );
+    const { albumCover, previewUrl, externalUrl, artists } =
+      await fetchSpotifyData(song.name, song.year);
     return {
       ...song,
       albumCover,
       previewUrl,
+      externalUrl,
+      artists,
     };
   };
 
@@ -58,7 +62,7 @@ export function useSongRecommendations() {
     setIsLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/users/${userId}/recommendations`
+        `http://localhost:5050/users/${userId}/recommendations`
       );
       const songs = await res.json();
       const enhanced = await Promise.all(
@@ -84,8 +88,8 @@ export function useSongRecommendations() {
 
     try {
       const endpoint = liked
-        ? `http://localhost:5000/users/${userId}/songs`
-        : `http://localhost:5000/users/${userId}/songs/${song.id}/dislike`;
+        ? `http://localhost:5050/users/${userId}/songs`
+        : `http://localhost:5050/users/${userId}/songs/${song.id}/dislike`;
 
       await fetch(endpoint, {
         method: "POST",
@@ -93,7 +97,6 @@ export function useSongRecommendations() {
         body: liked
           ? JSON.stringify({
               name: song.title,
-              artist: song.artist,
               album_cover: song.albumCover,
               spotify_id: song.spotify_id,
               genre: song.genre,

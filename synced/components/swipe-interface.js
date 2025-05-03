@@ -164,26 +164,18 @@ export function SwipeInterface() {
           <div className="relative">
             <Image
               src={currentSong.albumCover || "/placeholder.svg"}
-              alt={`${currentSong.title} album cover`}
+              alt={`${currentSong.name} album cover`}
               width={500}
               height={500}
               className="aspect-square w-full object-cover"
             />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
-              <h2 className="text-2xl font-bold">{currentSong.title}</h2>
-              <p className="text-lg">{currentSong.artist}</p>
+              <h2 className="text-2xl font-bold">{currentSong.name}</h2>
+              <p className="text-lg">{currentSong.artists}</p>
             </div>
           </div>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Album: {currentSong.album}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Genre: {currentSong.genre}
-                </p>
-              </div>
               <div className="flex gap-2">
                 <Button
                   size="icon"

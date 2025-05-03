@@ -12,7 +12,10 @@ def create_tables():
     cur = conn.cursor()
 
     cur.execute("""
-
+    DROP TABLE IF EXISTS users CASCADE;
+    DROP TABLE IF EXISTS songs CASCADE;
+    DROP TABLE IF EXISTS user_songs CASCADE;
+                
     CREATE TABLE IF NOT EXISTS users (
         id VARCHAR PRIMARY KEY,
         username VARCHAR(100),
@@ -23,22 +26,12 @@ def create_tables():
         id SERIAL PRIMARY KEY,
         song_name VARCHAR(255),
         artist_name VARCHAR(255),
-        album_cover_url TEXT,
-        spotify_id VARCHAR(100) UNIQUE,
-        genre VARCHAR(100),
-        tempo FLOAT
+        year INTEGER
     );
     CREATE TABLE IF NOT EXISTS user_songs (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        user_id VARCHAR REFERENCES users(id) ON DELETE CASCADE,
         song_id INTEGER REFERENCES songs(id) ON DELETE CASCADE,
-        UNIQUE(user_id, song_id)
-    );
-    CREATE TABLE IF NOT EXISTS user_dislikes (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        song_id INTEGER REFERENCES songs(id) ON DELETE CASCADE,
-        disliked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(user_id, song_id)
     );
     """)
