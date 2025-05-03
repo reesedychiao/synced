@@ -5,6 +5,7 @@ import { Headphones } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 
 export default function LikedSongsPage() {
   const { data: session, status } = useSession();
@@ -16,10 +17,10 @@ export default function LikedSongsPage() {
       if (session?.user?.id) {
         try {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${session.user.id}/liked-songs`
+            `http://localhost:5050/users/${session.user.id}/liked-songs`
           );
           const data = await res.json();
-          setLikedSongs(data);
+          setLikedSongs(data.saved_songs);
         } catch (error) {
           console.error("Failed to fetch liked songs:", error);
         } finally {
@@ -74,21 +75,21 @@ export default function LikedSongsPage() {
             {likedSongs.length > 0 ? (
               likedSongs.map((song) => (
                 <Link
-                  href={song.link}
+                  href={song.external_url}
                   target="_blank"
-                  key={song.id}
+                  key={song.name}
                   className="flex items-center gap-4 rounded-lg border p-4 transition hover:bg-gray-100"
                 >
                   <Image
-                    src={song.cover_url || "/placeholder.svg"}
+                    src={song.album_cover || "/placeholder.svg"}
                     alt="Album cover"
                     width={80}
                     height={80}
                     className="rounded-md"
                   />
                   <div className="flex flex-col">
-                    <h3 className="text-lg font-bold">{song.title}</h3>
-                    <p className="text-muted-foreground">{song.artist}</p>
+                    <h3 className="text-lg font-bold">{song.name}</h3>
+                    <p className="">{song.artists}</p>
                   </div>
                 </Link>
               ))

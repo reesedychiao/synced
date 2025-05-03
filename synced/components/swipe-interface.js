@@ -16,7 +16,8 @@ import {
 import { useSongRecommendations } from "../hooks/use-song-recommendations";
 
 export function SwipeInterface() {
-  const { currentSong, isLoading, swipeRight } = useSongRecommendations();
+  const { currentSong, isLoading, swipeLeft, swipeRight } =
+    useSongRecommendations();
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);

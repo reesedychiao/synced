@@ -55,7 +55,7 @@ def get_recommendations(user_id):
         starter = spotify_data.sample(10)
         return jsonify(starter[['name', 'year', 'artists']].to_dict(orient="records")), 200
 
-    song_list = [{'name': row[0], 'artists': row[1]} for row in liked_songs]
+    song_list = [{'name': row[0], 'year': row[2]} for row in liked_songs]
 
     try:
         recs = recommend_songs(song_list, spotify_data, n_songs=10)
@@ -96,15 +96,14 @@ def swipe(user_id):
     g.db.commit()
     return jsonify({"message": "Swipe recorded"}), 200
 
-# @main.route("/get_users_faves", methods=["GET"])
-# def get_users_faves():
-#     user_id = request.args.get("user_id")
-#     g.cursor.execute("""
-#         SELECT s.id, s.song_name, s.artist_name
-#         FROM songs s
-#         JOIN user_songs us ON us.song_id = s.id
-#         WHERE us.user_id = %s;
-#     """, (user_id,))
-#     rows = g.cursor.fetchall()
-#     songs = [{"id": r[0], "title": r[1], "artist": r[2]} for r in rows]
-#     return jsonify({"user_id": user_id, "saved_songs": songs}), 200
+@main.route("/users/<user_id>/liked-songs", methods=["GET"])
+def get_users_faves(user_id):
+    g.cursor.execute("""
+        SELECT s.name, s.artists, s.album_cover, s.external_url
+        FROM songs s
+        JOIN user_songs us ON us.song_id = s.id
+        WHERE us.user_id = %s;
+    """, (user_id,))
+    rows = g.cursor.fetchall()
+    songs = [{"name": r[0], "artists": r[1], "album_cover": r[2], "external_url": r[3]} for r in rows]
+    return jsonify({"user_id": user_id, "saved_songs": songs}), 200
