@@ -24,8 +24,10 @@ def create_tables():
 
     CREATE TABLE IF NOT EXISTS songs (
         id SERIAL PRIMARY KEY,
-        song_name VARCHAR(255),
-        artist_name VARCHAR(255),
+        name VARCHAR(255),
+        artists VARCHAR(255),
+        album_cover TEXT,
+        external_url TEXT,
         year INTEGER
     );
     CREATE TABLE IF NOT EXISTS user_songs (

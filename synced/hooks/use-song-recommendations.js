@@ -90,10 +90,12 @@ export function useSongRecommendations() {
         headers: { "Content-Type": "application/json" },
         body: liked
           ? JSON.stringify({
-              name: song.title,
-              album_cover: song.albumCover,
-              spotify_id: song.spotify_id,
-              genre: song.genre,
+              name: song.name,
+              artists: song.artists,
+              albumCover: song.albumCover,
+              externalUrl: song.externalUrl,
+              year: song.year,
+              liked: true,
             })
           : null,
       });
@@ -103,7 +105,7 @@ export function useSongRecommendations() {
   };
 
   const swipeLeft = async () => {
-    await handleFeedback(false);
+    // await handleFeedback(false);
     showNextSong();
   };
 

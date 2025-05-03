@@ -16,12 +16,10 @@ import {
 import { useSongRecommendations } from "../hooks/use-song-recommendations";
 
 export function SwipeInterface() {
-  const { currentSong, isLoading, swipeLeft, swipeRight } =
-    useSongRecommendations();
+  const { currentSong, isLoading, swipeRight } = useSongRecommendations();
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
   const [videoUrl, setVideoUrl] = useState(null);
   const cardRef = useRef(null);
 
@@ -105,10 +103,6 @@ export function SwipeInterface() {
     setIsPlaying(!isPlaying);
   };
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
-
   if (isLoading || !currentSong) {
     return (
       <div className="flex h-[500px] items-center justify-center">
@@ -144,7 +138,7 @@ export function SwipeInterface() {
               <ReactPlayer
                 url={videoUrl}
                 playing={isPlaying}
-                volume={isMuted ? 0 : 0.5}
+                volume={0.5}
                 controls
                 width="0%"
                 height="0px"
@@ -168,7 +162,7 @@ export function SwipeInterface() {
                     <Play className="h-4 w-4" />
                   )}
                 </Button>
-                <Button
+                {/* <Button
                   size="icon"
                   variant="ghost"
                   onClick={toggleMute}
@@ -179,7 +173,7 @@ export function SwipeInterface() {
                   ) : (
                     <Volume2 className="h-4 w-4" />
                   )}
-                </Button>
+                </Button> */}
               </div>
             </div>
           </CardContent>
