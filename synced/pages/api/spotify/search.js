@@ -36,6 +36,7 @@ export default async function handler(req, res) {
 
     const searchData = await searchRes.json();
     const track = searchData?.tracks?.items?.[0];
+    console.log("TRACK:", track);
 
     if (!track) {
       return res.status(404).json({ error: "Track not found" });
@@ -43,13 +44,12 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       albumCover: track.album.images?.[0]?.url ?? null,
-      previewUrl: track.preview_url ?? null,
       externalUrl: track.external_urls?.spotify ?? null,
       artists: track.artists?.map((a) => a.name).join(", ") ?? null,
       spotifyId: track.id,
     });
   } catch (err) {
-    console.error("🔥 Spotify API error:", err);
+    console.error("Spotify API error:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 }

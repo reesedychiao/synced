@@ -1,9 +1,8 @@
 "use client";
 
-import React from "react";
-
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import ReactPlayer from "react-player/youtube";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import {
@@ -21,24 +20,34 @@ export function SwipeInterface() {
     useSongRecommendations();
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
+  const [videoUrl, setVideoUrl] = useState(null);
   const cardRef = useRef(null);
-  const audioRef = useRef(null);
 
   useEffect(() => {
-    if (currentSong && currentSong.previewUrl) {
-      audioRef.current = new Audio(currentSong.previewUrl);
-      audioRef.current.volume = isMuted ? 0 : 0.5;
+    const fetchYouTubeUrl = async () => {
+      if (!currentSong?.name || !currentSong?.artists) return;
 
-      return () => {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current = null;
+      try {
+        const query = `${currentSong.name} ${currentSong.artists}`;
+        const res = await fetch(
+          `/api/youtube/search?q=${encodeURIComponent(query)}`
+        );
+        const data = await res.json();
+        if (data.videoId) {
+          setVideoUrl(`https://www.youtube.com/watch?v=${data.videoId}`);
+        } else {
+          setVideoUrl(null);
         }
-      };
-    }
-  }, [currentSong, isMuted]);
+      } catch (err) {
+        console.error("Error fetching YouTube video:", err);
+        setVideoUrl(null);
+      }
+    };
+
+    fetchYouTubeUrl();
+  }, [currentSong]);
 
   const handleDragStart = (e) => {
     setIsDragging(true);
@@ -58,7 +67,6 @@ export function SwipeInterface() {
 
     setDragOffset(offset);
 
-    // Rotate slightly based on drag
     const rotation = offset * 0.1;
     cardRef.current.style.transform = `translateX(${offset}px) rotate(${rotation}deg)`;
   };
@@ -70,13 +78,11 @@ export function SwipeInterface() {
     document.removeEventListener("touchend", handleDragEnd);
 
     if (cardRef.current) {
-      // If dragged far enough, trigger swipe
       if (dragOffset > 100) {
         handleSwipeRight();
       } else if (dragOffset < -100) {
         handleSwipeLeft();
       } else {
-        // Reset position if not swiped far enough
         cardRef.current.style.transform = "";
       }
     }
@@ -86,62 +92,21 @@ export function SwipeInterface() {
   };
 
   const handleSwipeLeft = () => {
-    if (cardRef.current) {
-      cardRef.current.style.transform = "translateX(-1000px) rotate(-30deg)";
-      cardRef.current.style.transition = "transform 0.5s ease";
-
-      setTimeout(() => {
-        if (cardRef.current) {
-          cardRef.current.style.transition = "";
-          cardRef.current.style.transform = "";
-        }
-        swipeLeft();
-        stopAudio();
-      }, 500);
-    }
+    swipeLeft();
+    setIsPlaying(true);
   };
 
   const handleSwipeRight = () => {
-    if (cardRef.current) {
-      cardRef.current.style.transform = "translateX(1000px) rotate(30deg)";
-      cardRef.current.style.transition = "transform 0.5s ease";
-
-      setTimeout(() => {
-        if (cardRef.current) {
-          cardRef.current.style.transition = "";
-          cardRef.current.style.transform = "";
-        }
-        swipeRight();
-        stopAudio();
-      }, 500);
-    }
+    swipeRight();
+    setIsPlaying(true);
   };
 
   const togglePlayback = () => {
-    if (!audioRef.current) return;
-
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
-
     setIsPlaying(!isPlaying);
   };
 
   const toggleMute = () => {
-    if (!audioRef.current) return;
-
-    audioRef.current.volume = isMuted ? 0.5 : 0;
     setIsMuted(!isMuted);
-  };
-
-  const stopAudio = () => {
-    if (audioRef.current && isPlaying) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-    }
   };
 
   if (isLoading || !currentSong) {
@@ -175,7 +140,21 @@ export function SwipeInterface() {
             </div>
           </div>
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+            {videoUrl ? (
+              <ReactPlayer
+                url={videoUrl}
+                playing={isPlaying}
+                volume={isMuted ? 0 : 0.5}
+                controls
+                width="0%"
+                height="0px"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No sound available
+              </p>
+            )}
+            <div className="flex items-center justify-between mt-4">
               <div className="flex gap-2">
                 <Button
                   size="icon"

@@ -10,17 +10,11 @@ async function fetchSpotifyData(title, year) {
         title
       )}&year=${encodeURIComponent(year)}`
     );
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Spotify API failed:", errorText);
-      throw new Error("Spotify search failed");
-    }
 
     const data = await response.json();
 
     return {
       albumCover: data.albumCover,
-      previewUrl: data.previewUrl,
       externalUrl: data.externalUrl,
       artists: data.artists,
     };
@@ -28,7 +22,6 @@ async function fetchSpotifyData(title, year) {
     console.error("Error fetching Spotify data:", error);
     return {
       albumCover: null,
-      previewUrl: null,
       externalUrl: null,
       artists: null,
     };
@@ -45,12 +38,13 @@ export function useSongRecommendations() {
   const [isLoading, setIsLoading] = useState(true);
 
   const enhanceSong = async (song) => {
-    const { albumCover, previewUrl, externalUrl, artists } =
-      await fetchSpotifyData(song.name, song.year);
+    const { albumCover, externalUrl, artists } = await fetchSpotifyData(
+      song.name,
+      song.year
+    );
     return {
       ...song,
       albumCover,
-      previewUrl,
       externalUrl,
       artists,
     };
