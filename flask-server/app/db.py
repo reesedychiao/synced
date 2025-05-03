@@ -45,76 +45,57 @@ def init_db(app):
         if cursor: cursor.close()
         if db: db.close()
 
-@app.route('/users', methods=['POST'])
-def create_user():
-    data = request.json
-    g.cursor.execute(
-        "INSERT INTO users (username, email) VALUES (%s, %s) RETURNING id;",
-        (data['username'], data['email'])
-    )
-    user_id = g.cursor.fetchone()[0]
-    g.db.commit()
-    return jsonify({'id': user_id}), 201
-
-@app.route('/users/<int:user_id>', methods=['GET'])
-def get_user(user_id):
-    g.cursor.execute("SELECT id, username, email, created_at FROM users WHERE id = %s;", (user_id,))
-    user = g.cursor.fetchone()
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    return jsonify({
-        'id': user[0],
-        'username': user[1],
-        'email': user[2],
-        'created_at': user[3].isoformat()
-    })
-
-@app.route('/users/<int:user_id>/songs', methods=['POST'])
+@app.route("/users/<int:user_id>/songs", methods=["POST"])
 def like_song(user_id):
     data = request.json
-    spotify_id = data['spotify_id']
+    print(f"📥 [POST] Like song for user {user_id}: {data}")
+    
+    spotify_id = data.get('spotify_id')
+    if not spotify_id:
+        print("❌ Missing spotify_id in request.")
+        return jsonify({'error': 'spotify_id is required'}), 400
 
+    # Check if song already exists
     g.cursor.execute("SELECT id FROM songs WHERE spotify_id = %s;", (spotify_id,))
     song = g.cursor.fetchone()
 
     if not song:
-        track = sp.track(spotify_id)
-        audio = sp.audio_features(spotify_id)[0]
-
-        if not audio:
-            return jsonify({'error': 'Audio features not found'}), 400
-
+        print("🎵 Song not in DB — inserting...")
         g.cursor.execute("""
             INSERT INTO songs (song_name, artist_name, album_cover_url, spotify_id, genre, tempo)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, NULL)
             RETURNING id;
         """, (
-            track['name'],
-            track['artists'][0]['name'],
-            track['album']['images'][0]['url'] if track['album']['images'] else None,
+            data.get("title", "Unknown"),
+            data.get("artist", "Unknown"),
+            data.get("album_cover", ""),
             spotify_id,
-            data.get('genre', None),
-            audio.get('tempo', None)
+            data.get("genre", None)
         ))
         song_id = g.cursor.fetchone()[0]
     else:
         song_id = song[0]
+        print(f"✅ Song already exists in DB (id={song_id})")
 
     g.cursor.execute("""
         INSERT INTO user_songs (user_id, song_id)
         VALUES (%s, %s)
         ON CONFLICT DO NOTHING;
     """, (user_id, song_id))
-
+    
     g.db.commit()
+    print(f"💾 Song liked and saved (song_id={song_id})")
     return jsonify({'message': 'Song liked successfully!'}), 201
 
-@app.route('/users/<int:user_id>/songs/<int:song_id>/dislike', methods=['POST'])
+@app.route("/users/<int:user_id>/songs/<int:song_id>/dislike", methods=["POST"])
 def dislike_song(user_id, song_id):
+    print(f"📥 [POST] Dislike song_id={song_id} for user_id={user_id}")
+
     g.cursor.execute("SELECT * FROM songs WHERE id = %s;", (song_id,))
     song = g.cursor.fetchone()
 
     if not song:
+        print("❌ Song not found in DB.")
         return jsonify({'error': 'Song not found'}), 404
 
     g.cursor.execute("""
@@ -124,10 +105,14 @@ def dislike_song(user_id, song_id):
     """, (user_id, song_id))
 
     g.db.commit()
+    print(f"👎 Song disliked and recorded.")
     return jsonify({'message': 'Song disliked successfully!'}), 201
 
-@app.route('/users/<int:user_id>/recommendations', methods=['GET'])
+
+@app.route("/users/<int:user_id>/recommendations", methods=["GET"])
 def get_recommendations(user_id):
+    print(f"📥 [GET] Recommendations requested for user_id={user_id}")
+    
     g.cursor.execute("""
         SELECT s.song_name, s.artist_name, s.spotify_id
         FROM songs s
@@ -135,34 +120,47 @@ def get_recommendations(user_id):
         WHERE us.user_id = %s;
     """, (user_id,))
     liked_songs = g.cursor.fetchall()
-
+    
     if not liked_songs:
+        print("⚠️ No liked songs found for this user.")
         return jsonify({'error': 'No liked songs found'}), 404
 
+    print(f"✅ Found {len(liked_songs)} liked songs.")
+    
     song_list = [{'name': row[0], 'artists': row[1]} for row in liked_songs]
 
-    spotify_data = pd.read_csv("data.csv")
+    try:
+        spotify_data = pd.read_csv("data/data.csv")
+    except Exception as e:
+        print(f"❌ Failed to load data.csv: {e}")
+        return jsonify({'error': 'Data load failed'}), 500
 
-    recs = recommend_songs(song_list, spotify_data, n_songs=10)
+    try:
+        recs = recommend_songs(song_list, spotify_data, n_songs=10)
+        print(f"🎧 Generated {len(recs)} recommendations.")
+    except Exception as e:
+        print(f"❌ Recommendation error: {e}")
+        return jsonify({'error': 'Recommendation failed'}), 500
+
     return jsonify(recs), 200
 
-@app.route('/users/<int:user_id>/liked-songs', methods=['GET'])
-def get_liked_songs(user_id):
-    g.cursor.execute("""
-        SELECT s.id, s.song_name, s.artist_name, s.album_cover_url, s.spotify_id
-        FROM songs s
-        JOIN user_songs us ON us.song_id = s.id
-        WHERE us.user_id = %s;
-    """, (user_id,))
-    songs = g.cursor.fetchall()
+# @app.route('/users/<int:user_id>/liked-songs', methods=['GET'])
+# def get_liked_songs(user_id):
+#     g.cursor.execute("""
+#         SELECT s.id, s.song_name, s.artist_name, s.album_cover_url, s.spotify_id
+#         FROM songs s
+#         JOIN user_songs us ON us.song_id = s.id
+#         WHERE us.user_id = %s;
+#     """, (user_id,))
+#     songs = g.cursor.fetchall()
 
-    return jsonify([
-        {
-            'id': row[0],
-            'title': row[1],
-            'artist': row[2],
-            'cover_url': row[3],
-            'link': f"https://open.spotify.com/track/{row[4]}"
-        }
-        for row in songs
-    ]), 200
+#     return jsonify([
+#         {
+#             'id': row[0],
+#             'title': row[1],
+#             'artist': row[2],
+#             'cover_url': row[3],
+#             'link': f"https://open.spotify.com/track/{row[4]}"
+#         }
+#         for row in songs
+#     ]), 200

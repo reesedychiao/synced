@@ -12,12 +12,13 @@ def create_tables():
     cur = conn.cursor()
 
     cur.execute("""
+
     CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(100) NOT NULL,
-        email VARCHAR(100) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id VARCHAR PRIMARY KEY,
+        username VARCHAR(100),
+        email VARCHAR(255) NOT NULL
     );
+
     CREATE TABLE IF NOT EXISTS songs (
         id SERIAL PRIMARY KEY,
         song_name VARCHAR(255),

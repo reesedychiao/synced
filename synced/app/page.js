@@ -4,9 +4,40 @@ import { Button } from "../components/ui/button";
 import { Headphones, Music, Heart } from "lucide-react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function Home() {
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (!session?.user) return;
+
+    const syncUser = async () => {
+      try {
+        const res = await fetch("http://localhost:5050/users", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: session.user.email,
+            name: session.user.name,
+            email: session.user.email,
+          }),
+        });
+
+        if (res.ok) {
+          console.log("User synced with backend");
+        } else {
+          console.error("Failed to sync user:", await res.text());
+        }
+      } catch (err) {
+        console.error("Sync error:", err);
+      }
+    };
+
+    syncUser();
+  }, [session]);
 
   if (status === "loading") {
     return <div>Loading...</div>;
