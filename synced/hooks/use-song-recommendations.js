@@ -120,6 +120,10 @@ export function useSongRecommendations() {
       setCurrentSongIndex(nextIndex);
       setCurrentSong(recommendations[nextIndex]);
     } else {
+      setCurrentSong(null);
+      setRecommendations([]);
+      setCurrentSongIndex(0);
+      setIsLoading(true);
       fetchRecommendations(); // Fetch new batch
     }
   };
