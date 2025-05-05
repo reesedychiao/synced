@@ -44,24 +44,3 @@ def init_db(app):
         db = g.pop('db', None)
         if cursor: cursor.close()
         if db: db.close()
-
-# @app.route("/users/<int:user_id>/songs/<int:song_id>/dislike", methods=["POST"])
-# def dislike_song(user_id, song_id):
-#     print(f"📥 [POST] Dislike song_id={song_id} for user_id={user_id}")
-
-#     g.cursor.execute("SELECT * FROM songs WHERE id = %s;", (song_id,))
-#     song = g.cursor.fetchone()
-
-#     if not song:
-#         print("❌ Song not found in DB.")
-#         return jsonify({'error': 'Song not found'}), 404
-
-#     g.cursor.execute("""
-#         INSERT INTO user_dislikes (user_id, song_id)
-#         VALUES (%s, %s)
-#         ON CONFLICT DO NOTHING;
-#     """, (user_id, song_id))
-
-#     g.db.commit()
-#     print(f"👎 Song disliked and recorded.")
-#     return jsonify({'message': 'Song disliked successfully!'}), 201

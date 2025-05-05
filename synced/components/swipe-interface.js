@@ -125,8 +125,8 @@ export function SwipeInterface() {
             <Image
               src={currentSong.albumCover || "/placeholder.svg"}
               alt={`${currentSong.name} album cover`}
-              width={500}
-              height={500}
+              width={300}
+              height={300}
               className="aspect-square w-full object-cover"
             />
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 text-white">
@@ -163,18 +163,6 @@ export function SwipeInterface() {
                     <Play className="h-4 w-4" />
                   )}
                 </Button>
-                {/* <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={toggleMute}
-                  className="h-8 w-8"
-                >
-                  {isMuted ? (
-                    <VolumeX className="h-4 w-4" />
-                  ) : (
-                    <Volume2 className="h-4 w-4" />
-                  )}
-                </Button> */}
               </div>
             </div>
           </CardContent>

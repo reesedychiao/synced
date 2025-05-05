@@ -62,9 +62,16 @@ export function useSongRecommendations() {
       const enhanced = await Promise.all(
         songs.map((song) => enhanceSong(song))
       );
-      setRecommendations(enhanced);
+      const filtered = enhanced.filter(
+        (song) =>
+          song.albumCover &&
+          song.albumCover.trim() !== "" &&
+          song.year &&
+          parseInt(song.year) >= 2000
+      );
+      setRecommendations(filtered);
       setCurrentSongIndex(0);
-      setCurrentSong(enhanced[0] || null);
+      setCurrentSong(filtered[0] || null);
     } catch (err) {
       console.error("Error fetching recommendations:", err);
     } finally {
